@@ -22,7 +22,7 @@ function create2DArray(size) {
     for (let i = 0; i < size; i++) {
         var innerArray = [];
         for (let j = 0; j < size; j++) {
-            innerArray[j] = {value:0,tile:undefined};
+            innerArray[j] = {value:0,tile:undefined,checked:false};
         }
         outerArray[i] = innerArray;
     }
@@ -218,8 +218,7 @@ function generateGrid() {
                 tile = document.createElement('td');
                 tile.value = field[i][j].value;
                 field[i][j].tile = tile;
-                //tile.textContent = field[i][j].value;
-                tile.onclick = function() {click(field[i][j])}
+                tile.onclick = function() {click(i,j)}
                 
             }
             gameGrid.appendChild(tile);
@@ -227,15 +226,15 @@ function generateGrid() {
     }
 }
 
-function click(element) {
-    if(element.value == 9) {
+function click(i,j) {
+    if(field[i][j].value == 9) {
         gameOver();
     }
-    if(element.value) {
-        element.tile.textContent = element.value;
-        element.tile.style.backgroundColor = "gray";
+    else if(field[i][j].value) {
+        field[i][j].tile.textContent = field[i][j].value;
+        field[i][j].tile.style.backgroundColor = "gray";
     } else {
-        checkIfNextIsClean(element);
+        emptyFieldCheck(i,j);
     }
     
 }
@@ -253,7 +252,21 @@ function gameOver() {
         }
     }
 }
- function checkIfNextIsClean(element) {
-     
- }
 
+function emptyFieldCheck(i,j) {
+    for(let x=-1;x<=1;x++) {
+        for(let y=-1;y<=1;y++) {
+            if(i+x>=0 && i+x<field.length && j+y>=0 && j+y<field.length) {
+                if(field[i+x][j+y].value == 0 && !field[i+x][j+y].checked) {
+                    field[i+x][j+y].tile.style.backgroundColor = "white";
+                    field[i+x][j+y].checked = true;
+                    emptyFieldCheck(i+x,j+y);
+                } else if(field[i+x][j+y].value != 9 && !field[i+x][j+y].checked) {
+                    field[i+x][j+y].tile.textContent = field[i+x][j+y].value;
+                    field[i+x][j+y].checked = true;
+                    field[i+x][j+y].tile.style.backgroundColor = "gray";
+                }
+            }
+        }
+    }
+}
