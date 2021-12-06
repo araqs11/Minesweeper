@@ -7,13 +7,16 @@ medium  16 x 16 40 mines 256 tiles
 hard    22 x 22 99 mines 484 tiles
 */
 var field;
+var mineLimit;
+var click_holder;
+var realMineCounter;
 
 function startGame() {
     generateField();
     generateMines();
     generateNumbers();
     generateGrid();
-
+    
     
 }
 
@@ -22,7 +25,7 @@ function create2DArray(size) {
     for (let i = 0; i < size; i++) {
         var innerArray = [];
         for (let j = 0; j < size; j++) {
-            innerArray[j] = {value:0,tile:undefined,checked:false};
+            innerArray[j] = {value:0,tile:undefined};
         }
         outerArray[i] = innerArray;
     }
@@ -52,7 +55,8 @@ function generateMines() {
         case 22: mines = 99;break;
         default: console.log("ERROR AT GENERATING MINES");
     }
-
+    mineLimit = mines;
+    realMineCounter = mines;
     for (let i = 0; i < mines; i++) {
         var minePosX = Math.floor(Math.random()*field.length);
         var minePosY = Math.floor(Math.random()*field.length);
@@ -218,6 +222,14 @@ function generateGrid() {
                 tile = document.createElement('td');
                 tile.value = field[i][j].value;
                 field[i][j].tile = tile;
+                tile.pos = {i,j};
+                if(field[i][j].value == 9) {
+                    tile.isMine = true;
+                } else {
+                    tile.isMine = false;
+                }
+                tile.checked = false;
+                tile.possibleMine = false;
                 tile.onclick = function() {click(i,j)}
                 
             }
@@ -233,10 +245,29 @@ function click(i,j) {
     else if(field[i][j].value) {
         field[i][j].tile.textContent = field[i][j].value;
         field[i][j].tile.style.backgroundColor = "gray";
+        field[i][j].tile.checked = true;
     } else {
         emptyFieldCheck(i,j);
     }
     
+}
+
+function emptyFieldCheck(i,j) {
+    for(let x=-1;x<=1;x++) {
+        for(let y=-1;y<=1;y++) {
+            if(i+x>=0 && i+x<field.length && j+y>=0 && j+y<field.length) {
+                if(field[i+x][j+y].value == 0 && !field[i+x][j+y].tile.checked) {
+                    field[i+x][j+y].tile.style.backgroundColor = "white";
+                    field[i+x][j+y].tile.checked = true;
+                    emptyFieldCheck(i+x,j+y);
+                } else if(field[i+x][j+y].value != 9 && !field[i+x][j+y].tile.checked) {
+                    field[i+x][j+y].tile.textContent = field[i+x][j+y].value;
+                    field[i+x][j+y].tile.checked = true;
+                    field[i+x][j+y].tile.style.backgroundColor = "gray";
+                }
+            }
+        }
+    }
 }
 
 function gameOver() {
@@ -253,20 +284,75 @@ function gameOver() {
     }
 }
 
-function emptyFieldCheck(i,j) {
-    for(let x=-1;x<=1;x++) {
-        for(let y=-1;y<=1;y++) {
-            if(i+x>=0 && i+x<field.length && j+y>=0 && j+y<field.length) {
-                if(field[i+x][j+y].value == 0 && !field[i+x][j+y].checked) {
-                    field[i+x][j+y].tile.style.backgroundColor = "white";
-                    field[i+x][j+y].checked = true;
-                    emptyFieldCheck(i+x,j+y);
-                } else if(field[i+x][j+y].value != 9 && !field[i+x][j+y].checked) {
-                    field[i+x][j+y].tile.textContent = field[i+x][j+y].value;
-                    field[i+x][j+y].checked = true;
-                    field[i+x][j+y].tile.style.backgroundColor = "gray";
-                }
+function gameWon() {
+    alert("You cleared all mines!")
+    for (let i = 0; i < field.length; i++) {
+        for (let j = 0; j < field.length; j++) {
+            if(field[i][j].value == 9) {
+                field[i][j].tile.style.backgroundColor = "Gray";
+                field[i][j].tile.textContent = "B";
+            } else if(field[i][j].value){
+                field[i][j].tile.style.backgroundColor = "lightblue";
+                field[i][j].tile.textContent = field[i][j].value;
+            } else {
+                field[i][j].tile.style.backgroundColor = "white";
+                field[i][j].tile.textContent = field[i][j].value;
             }
+            field[i][j].tile.onclick = undefined;
         }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById('gameGrid').addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener('mousedown', function(event) {
+        var tile = event.target;
+        if(event.button==2 && tile.tagName == "TD" && !tile.possibleMine && mineLimit > 0 && !tile.checked) {
+            click_holder = tile.onclick;   
+            switchToPossibleMine(tile,1)
+            changeTileToQuestionmark(tile,1)
+            lowerMineCounter(tile);
+        } else if(event.button==2 && tile.tagName == "TD" && tile.possibleMine) {
+            switchToPossibleMine(tile,0)
+            changeTileToQuestionmark(tile,0)
+            upperMineCounter(tile);
+        }
+    })
+});
+
+function lowerMineCounter (tile) {
+    mineLimit--;
+    if(tile.isMine) {
+        realMineCounter--;
+    }
+    if(mineLimit == 0 && realMineCounter == 0) {
+        gameWon();
+    }
+}
+function upperMineCounter (tile) {
+    mineLimit++;
+    if(tile.isMine) {
+        realMineCounter++;
+    }
+}
+
+function switchToPossibleMine(tile,is) {
+    if(is) {
+        tile.style.backgroundColor = "red";
+        tile.possibleMine = true;
+        
+        tile.onclick = undefined;
+    } else {
+        tile.style.backgroundColor = "lightgreen";   
+        tile.possibleMine = false;
+        tile.onclick = click_holder;
+    }
+}
+
+function changeTileToQuestionmark(tile,is) {
+    if(is) {
+        //tile.innerHTML = "B?";
+    } else {
+
     }
 }
