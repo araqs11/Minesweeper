@@ -338,12 +338,9 @@ function upperMineCounter (tile) {
 
 function switchToPossibleMine(tile,is) {
     if(is) {
-        tile.style.backgroundColor = "red";
         tile.possibleMine = true;
-        
         tile.onclick = undefined;
     } else {
-        tile.style.backgroundColor = "lightgreen";   
         tile.possibleMine = false;
         tile.onclick = click_holder;
     }
@@ -351,8 +348,8 @@ function switchToPossibleMine(tile,is) {
 
 function changeTileToQuestionmark(tile,is) {
     if(is) {
-        //tile.innerHTML = "B?";
+        tile.innerHTML = "&#127988"
     } else {
-
+        tile.innerHTML = ""
     }
 }
